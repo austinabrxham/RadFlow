@@ -28,7 +28,6 @@ export interface Patient {
   gender: 'Male' | 'Female' | 'Other';
   diagnosis: string;
   registeredAt: string;
-  qrCode: string;
   stages: {
     [key in WorkflowStage]: {
       status: StageStatus;
@@ -41,14 +40,18 @@ export interface Patient {
 
 export interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isLoading?: boolean;
 }
 
 export interface DataContextType {
   patients: Patient[];
-  addPatient: (patient: Omit<Patient, 'id' | 'qrCode'>) => void;
-  updatePatientStage: (patientId: string, stage: WorkflowStage, status: StageStatus) => void;
-  getPatientsByRole: (role: UserRole) => Patient[];
+  addPatient: (patient: Omit<Patient, 'id'>) => Promise<void>;
+  updatePatientStage: (patientId: string, stage: WorkflowStage, status: StageStatus) => Promise<void>;
+  getPatientsByRole: (role: UserRole) => Promise<Patient[]>;
+  isLoading?: boolean;
+  error?: string | null;
+  refreshPatients?: () => Promise<void>;
 }

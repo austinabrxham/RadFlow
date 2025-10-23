@@ -26,7 +26,7 @@ export default function RegisterPatient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newPatient: Omit<Patient, 'id' | 'qrCode'> = {
+    const newPatient: Omit<Patient, 'id'> = {
       ...formData,
       age: parseInt(formData.age),
       registeredAt: new Date().toISOString(),
@@ -42,14 +42,22 @@ export default function RegisterPatient() {
       },
     };
 
-    await addPatient(newPatient);
-    
-    toast({
-      title: 'Patient Registered',
-      description: `${formData.name} has been successfully registered.`,
-    });
-    
-    navigate('/dashboard');
+    try {
+      await addPatient(newPatient);
+      
+      toast({
+        title: 'Patient Registered',
+        description: `${formData.name} has been successfully registered.`,
+      });
+      
+      navigate('/dashboard');
+    } catch (error) {
+      toast({
+        title: 'Registration Failed',
+        description: 'Failed to register patient. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -85,7 +93,7 @@ export default function RegisterPatient() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    placeholder="John Doe"
+                    placeholder="eg. Jones Joseph"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required

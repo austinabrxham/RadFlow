@@ -2,7 +2,7 @@ import { Patient, UserRole, WorkflowStage } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import WorkflowProgress from './WorkflowProgress';
-import { Calendar, User, FileText } from 'lucide-react';
+import { User, FileText } from 'lucide-react';
 
 interface PatientCardProps {
   patient: Patient;
@@ -31,20 +31,10 @@ export default function PatientCard({ patient, showActions, userRole }: PatientC
                 <FileText className="h-3 w-3" />
                 {patient.diagnosis}
               </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {new Date(patient.registeredAt).toLocaleDateString()}
-              </span>
             </div>
           </div>
           
-          <div className="ml-4">
-            <img 
-              src={patient.qrCode} 
-              alt={`QR Code for ${patient.patientId}`}
-              className="w-20 h-20 border-2 border-border rounded"
-            />
-          </div>
+          {/* QR code removed from UI */}
         </div>
 
         <WorkflowProgress 

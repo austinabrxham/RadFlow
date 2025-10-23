@@ -11,26 +11,39 @@ import { useToast } from '@/hooks/use-toast';
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(username, password);
+    setIsLoading(true);
     
-    if (success) {
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome to RadFlow Compass',
-      });
-      navigate('/dashboard');
-    } else {
+    try {
+      const success = await login(username, password);
+      
+      if (success) {
+        toast({
+          title: 'Login Successful',
+          description: 'Welcome to RadFlow Compass',
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: 'Login Failed',
+          description: 'Invalid username or password',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
       toast({
         title: 'Login Failed',
-        description: 'Invalid username or password',
+        description: 'Unable to connect to server. Please try again.',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -43,7 +56,7 @@ export default function Login() {
               <Activity className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl">RadFlow Compass</CardTitle>
+          <CardTitle className="text-2xl">RadFlow</CardTitle>
           <CardDescription>
             Radiation Therapy Workflow Management System
           </CardDescription>
@@ -72,20 +85,12 @@ export default function Login() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full">
-              Login
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
           
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-semibold mb-2">Demo Accounts:</p>
-            <div className="text-xs space-y-1 text-muted-foreground">
-              <p>👨‍⚕️ Consultant: <span className="font-mono">consultant / demo123</span></p>
-              <p>👨‍⚕️ Resident: <span className="font-mono">resident / demo123</span></p>
-              <p>🔬 Physicist: <span className="font-mono">physicist / demo123</span></p>
-              <p>📋 Radiographer: <span className="font-mono">radiographer / demo123</span></p>
-            </div>
-          </div>
+          
         </CardContent>
       </Card>
     </div>

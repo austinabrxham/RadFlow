@@ -1,9 +1,11 @@
 import { Patient, UserRole, WorkflowStage } from '@/types';
+import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, Clock } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { canStageBeCompleted } from '@/lib/utils';
 
 interface WorkflowProgressProps {
   patient: Patient;
@@ -26,12 +28,34 @@ export default function WorkflowProgress({ patient, showActions, userRole }: Wor
   const { updatePatientStage } = useData();
   const { toast } = useToast();
 
-  const handleComplete = (stage: WorkflowStage) => {
-    updatePatientStage(patient.id, stage, 'Completed');
-    toast({
-      title: 'Stage Completed',
-      description: `${stage} marked as completed for ${patient.name}`,
-    });
+  const [updatingStage, setUpdatingStage] = useState<WorkflowStage | null>(null);
+
+  const handleComplete = async (stage: WorkflowStage) => {
+    if (!canStageBeCompleted(patient, stage)) {
+      toast({
+        title: 'Cannot Complete Stage',
+        description: 'Previous stages must be completed first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setUpdatingStage(stage);
+      await updatePatientStage(patient.id, stage, 'Completed');
+      toast({
+        title: 'Stage Completed',
+        description: `${stage} marked as completed for ${patient.name}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update stage. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingStage(null);
+    }
   };
 
   return (
@@ -100,8 +124,14 @@ export default function WorkflowProgress({ patient, showActions, userRole }: Wor
                   size="sm"
                   onClick={() => handleComplete(stage)}
                   variant="outline"
+                  disabled={updatingStage === stage || !canStageBeCompleted(patient, stage)}
+                  title={!canStageBeCompleted(patient, stage) ? "Complete previous stages first" : ""}
+                  className="relative"
                 >
-                  Mark Complete
+                  {!canStageBeCompleted(patient, stage) && (
+                    <AlertCircle className="h-3 w-3 text-muted-foreground absolute -left-4" />
+                  )}
+                  {updatingStage === stage ? 'Updating...' : 'Mark Complete'}
                 </Button>
               )}
             </div>

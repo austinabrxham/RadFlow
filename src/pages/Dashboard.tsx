@@ -1,24 +1,44 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { LogOut, UserPlus, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PatientCard from '@/components/PatientCard';
+import PatientCardCompact from '@/components/PatientCardCompact';
 import StatsCards from '@/components/StatsCards';
+import { isPatientPendingForRole, getCompletedStagesCount } from '@/lib/utils';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const { patients, getPatientsByRole } = useData();
+  const { patients, getPatientsByRole, isLoading, error } = useData();
   const navigate = useNavigate();
+  const [myPatients, setMyPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
-  const myPatients = user ? getPatientsByRole(user.role) : [];
-  const allPatients = patients;
+  useEffect(() => {
+    if (user && patients) {
+      // Filter patients where the current stage is assigned to the user's role
+      const myPendingPatients = patients.filter(patient => 
+        isPatientPendingForRole(patient, user.role)
+      );
+      setMyPatients(myPendingPatients);
+    }
+  }, [user, patients]);
+
+  const allPatients = [...patients].sort((a, b) => {
+    const aCompleted = getCompletedStagesCount(a);
+    const bCompleted = getCompletedStagesCount(b);
+    return aCompleted - bCompleted; // Sort in ascending order (least completed first)
+  });
 
   return (
     <div className="min-h-screen bg-medical-bg">
@@ -31,7 +51,7 @@ export default function Dashboard() {
                 <Activity className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">RadFlow Compass</h1>
+                <h1 className="text-xl font-bold">RadFlow</h1>
                 <p className="text-sm text-sidebar-foreground/70">Radiation Therapy Workflow</p>
               </div>
             </div>
@@ -73,9 +93,17 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="text-lg">My Pending Tasks ({myPatients.length})</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {myPatients.map(patient => (
-                <PatientCard key={patient.id} patient={patient} showActions userRole={user?.role} />
+                <PatientCardCompact
+                  key={patient.id}
+                  patient={patient}
+                  userRole={user?.role}
+                  onClick={() => {
+                    setSelectedPatient(patient);
+                    setIsDetailsOpen(true);
+                  }}
+                />
               ))}
             </CardContent>
           </Card>
@@ -86,12 +114,33 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="text-lg">All Patients ({allPatients.length})</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             {allPatients.map(patient => (
-              <PatientCard key={patient.id} patient={patient} userRole={user?.role} />
+              <PatientCardCompact
+                key={patient.id}
+                patient={patient}
+                userRole={user?.role}
+                onClick={() => {
+                  setSelectedPatient(patient);
+                  setIsDetailsOpen(true);
+                }}
+              />
             ))}
           </CardContent>
         </Card>
+
+        {/* Patient Details Dialog */}
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+          <DialogContent className="max-w-2xl p-0">
+            {selectedPatient && (
+              <PatientCard
+                patient={patients.find(p => p.id === selectedPatient.id) || selectedPatient}
+                showActions
+                userRole={user?.role}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
